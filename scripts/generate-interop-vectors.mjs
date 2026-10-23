@@ -14,12 +14,18 @@
 //
 // Every `line` below is produced by encodeFrame() itself — never hand-typed — so the fixture
 // cannot silently drift from what this reference implementation actually emits. The
-// companion test (tests/interop-vectors.test.ts) re-checks that after every build: it
+// companion test (tests/interop-vectors.test.ts) re-checks that on every test run: it
 // decodes each `line` and asserts the result equals `frame`, and re-encodes each `frame` and
 // asserts the result equals `line`, using the same *source* encoder/decoder this script's
-// dist build was compiled from.
+// dist build was compiled from. It also pins the file's exact bytes to the SHA-256 that
+// vectors/README.md publishes.
+//
+// `--check` regenerates the file in memory and compares it with the committed one byte for
+// byte, without writing anything: the deliberate check that the file is exactly this
+// script's output.
 
-import { writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { encodeFrame, makeAccept, makeOffer } from "../dist/index.js";
@@ -49,12 +55,21 @@ const accept = makeAccept(offer, {
   nonce: "0011223344556677",
 });
 
+// `presig` (SPEC §3.3) is the lock's one optional field and, with `offer.job`, one of the
+// two nested objects in tclk/1. Like every value here it is synthetic, though it passes the
+// decoder: the nonce is the secp256k1 generator point G, SEC1-compressed, and `s` is a fixed
+// scalar in [1, n). It is not a pre-signature over any claim message: SPEC §3.3 uses
+// `presig` on PTLC rails, while this contract is a hash lock.
 const lock = {
   type: "lock",
   from: PAYER_DID,
   contract: accept.contract,
   rail: "flop-htlc",
   ref: "escrow-9001",
+  presig: {
+    nonce: "0x0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+    s: "0x" + "22".repeat(32),
+  },
 };
 
 const reveal = {
@@ -108,13 +123,28 @@ const doc = {
   wirePrefix: "tclk1 ",
   generatedBy: "@flop-labs/tclk (reference TS implementation)",
   purpose:
-    "One decodable, fully-populated example of every tclk/1 frame type, for a from-scratch " +
-    "port in any language to check its encoder and decoder against without a TypeScript " +
-    "toolchain. `frame` is the canonical object; `line` is exactly what encodeFrame() " +
-    "produces for it and what decodeFrame() must reproduce it from.",
+    "One decodable example of every tclk/1 frame type, for a from-scratch port in any " +
+    "language to check its encoder and decoder against without a TypeScript toolchain. " +
+    "`frame` is the canonical object; `line` is exactly what encodeFrame() produces for it " +
+    "and what decodeFrame() must reproduce it from.",
   vectors,
 };
 
 const outPath = join(root, "vectors", "tclk-v1.golden.json");
-writeFileSync(outPath, JSON.stringify(doc, null, 2) + "\n");
-console.log(`wrote ${Object.keys(vectors).length} vectors to ${outPath}`);
+const text = JSON.stringify(doc, null, 2) + "\n";
+const sha256 = createHash("sha256").update(text).digest("hex");
+
+if (process.argv.includes("--check")) {
+  if (!readFileSync(outPath).equals(Buffer.from(text))) {
+    console.error(
+      `${outPath} is not byte-identical to what this script generates ` +
+        `(expected sha256 ${sha256}); ` +
+        "regenerate it, or check it out with LF line endings",
+    );
+    process.exit(1);
+  }
+  console.log(`${outPath} is byte-identical to the generator output (sha256 ${sha256})`);
+} else {
+  writeFileSync(outPath, text);
+  console.log(`wrote ${Object.keys(vectors).length} vectors to ${outPath} (sha256 ${sha256})`);
+}
