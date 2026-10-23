@@ -2,7 +2,7 @@
   "schema": "tclk-interop-vectors-v1",
   "wirePrefix": "tclk1 ",
   "generatedBy": "@flop-labs/tclk (reference TS implementation)",
-  "purpose": "One decodable, fully-populated example of every tclk/1 frame type, for a from-scratch port in any language to check its encoder and decoder against without a TypeScript toolchain. `frame` is the canonical object; `line` is exactly what encodeFrame() produces for it and what decodeFrame() must reproduce it from.",
+  "purpose": "One decodable example of every tclk/1 frame type, for a from-scratch port in any language to check its encoder and decoder against without a TypeScript toolchain. `frame` is the canonical object; `line` is exactly what encodeFrame() produces for it and what decodeFrame() must reproduce it from.",
   "vectors": {
     "offer": {
       "frame": {
@@ -46,9 +46,13 @@
         "from": "did:key:z6Mkffffffffffffffffffffffffffffffffffffffffffff",
         "contract": "0x2768bf32b455317879796093ff2e5882371cbec238611ca71f555a7fcbe58e1c",
         "rail": "flop-htlc",
-        "ref": "escrow-9001"
+        "ref": "escrow-9001",
+        "presig": {
+          "nonce": "0x0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          "s": "0x2222222222222222222222222222222222222222222222222222222222222222"
+        }
       },
-      "line": "tclk1 {\"contract\":\"0x2768bf32b455317879796093ff2e5882371cbec238611ca71f555a7fcbe58e1c\",\"from\":\"did:key:z6Mkffffffffffffffffffffffffffffffffffffffffffff\",\"rail\":\"flop-htlc\",\"ref\":\"escrow-9001\",\"type\":\"lock\"}"
+      "line": "tclk1 {\"contract\":\"0x2768bf32b455317879796093ff2e5882371cbec238611ca71f555a7fcbe58e1c\",\"from\":\"did:key:z6Mkffffffffffffffffffffffffffffffffffffffffffff\",\"presig\":{\"nonce\":\"0x0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798\",\"s\":\"0x2222222222222222222222222222222222222222222222222222222222222222\"},\"rail\":\"flop-htlc\",\"ref\":\"escrow-9001\",\"type\":\"lock\"}"
     },
     "reveal": {
       "frame": {
